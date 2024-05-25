@@ -1,42 +1,36 @@
 name: Dependabot PR Consumer
 
 on:
-  workflow_run:
-    workflows: ["Dependabot PR Producer"]
-    types:
-      - completed
+  pull_request:
+    types: [opened, synchronize]
 
 permissions:
-  pull-requests: write
-  contents: write
+  contents: read
 
 jobs:
-  approve-and-merge:
+  dependabot-pr-consumer:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
     steps:
-      - name: Download metadata
-        uses: actions/download-artifact@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Dependabot metadata
+        id: dependabot-metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          alert-lookup: true
+          compat-lookup: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Save metadata
+        run: |
+          echo "UPDATE_TYPE=${{ steps.dependabot-metadata.outputs.update-type }}" > metadata.txt
+          echo "PR_URL=${{ github.event.pull_request.html_url }}" >> metadata.txt
+          echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> metadata.txt
+          echo "SCORE=${{ steps.dependabot-metadata.outputs.compatibility-score }}" >> metadata.txt
+      - uses: actions/upload-artifact@v4
         with:
           name: metadata
-
-      - name: Read metadata
-        id: read-metadata
-        run: |
-          PR_URL=$(cat metadata.txt | grep PR_URL | cut -d '=' -f2)
-          PR_NUMBER=$(cat metadata.txt | grep PR_NUMBER | cut -d '=' -f2)
-          UPDATE_TYPE=$(cat metadata.txt | grep UPDATE_TYPE | cut -d '=' -f2)
-          echo "::set-output name=PR_URL::$PR_URL"
-          echo "::set-output name=PR_NUMBER::$PR_NUMBER"
-          echo "::set-output name=UPDATE_TYPE::$UPDATE_TYPE"
-      
-      - name: Approve a PR
-        run: gh pr review --approve "${{ steps.read-metadata.outputs.PR_URL }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Enable auto-merge for Dependabot PRs
-        if: ${{ steps.read-metadata.outputs.UPDATE_TYPE != 'version-update:semver-major' }}
-        run: gh pr merge --auto --squash "${{ steps.read-metadata.outputs.PR_URL }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          path: metadata.txt
+          
