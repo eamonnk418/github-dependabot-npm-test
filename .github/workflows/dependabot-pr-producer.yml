@@ -1,4 +1,4 @@
-name: Receive Dependabot PR
+name: Dependabot PR Producer
 
 on:
   pull_request:
@@ -29,7 +29,7 @@ jobs:
           echo "UPDATE_TYPE=${{ steps.dependabot-metadata.outputs.update-type }}" > metadata.txt
           echo "PR_URL=${{ github.event.pull_request.html_url }}" >> metadata.txt
           echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> metadata.txt
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: metadata
           path: metadata.txt
