@@ -4,9 +4,6 @@ on:
   pull_request:
     types: [opened, synchronize]
 
-permissions:
-  contents: read
-
 jobs:
   dependabot-pr-consumer:
     runs-on: ubuntu-latest
@@ -29,6 +26,10 @@ jobs:
           echo "PR_URL=${{ github.event.pull_request.html_url }}" >> metadata.txt
           echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> metadata.txt
           echo "SCORE=${{ steps.dependabot-metadata.outputs.compatibility-score }}" >> metadata.txt
+      
+      - name: List files in workspace
+        run: ls -al
+      
       - uses: actions/upload-artifact@v4
         with:
           name: metadata
