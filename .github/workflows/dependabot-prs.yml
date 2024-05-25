@@ -4,13 +4,6 @@ on:
   pull_request: 
     branches: 
       - main
-  workflow_dispatch:
-    inputs:
-      actor:
-        type: string
-        description: 'GitHub Dependabot Actor'
-        default: 'dependabot[bot]'
-        required: true
 
 jobs:
   consumer:
