@@ -4,7 +4,7 @@ on: pull_request
 
 jobs:
   consumer:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     if: ${{ github.event.pull_request.user.login == 'dependabot[bot]'}}
     steps:
       - name: Fetch Dependabot metadata
