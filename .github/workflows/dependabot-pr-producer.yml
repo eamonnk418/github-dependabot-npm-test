@@ -1,0 +1,35 @@
+name: Receive Dependabot PR
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  dependabot:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Dependabot metadata
+        id: dependabot-metadata
+        uses: dependabot/fetch-metadata@v1
+        with:
+          alert-lookup: true
+          compat-lookup: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Save metadata
+        run: |
+          echo "UPDATE_TYPE=${{ steps.dependabot-metadata.outputs.update-type }}" > metadata.txt
+          echo "PR_URL=${{ github.event.pull_request.html_url }}" >> metadata.txt
+          echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> metadata.txt
+      - uses: actions/upload-artifact@v2
+        with:
+          name: metadata
+          path: metadata.txt

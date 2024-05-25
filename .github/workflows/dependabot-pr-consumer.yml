@@ -1,0 +1,43 @@
+name: Approve and Merge Dependabot PR
+
+on:
+  workflow_run:
+    workflows: ["Receive Dependabot PR"]
+    types:
+      - completed
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  approve-and-merge:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Download metadata
+        uses: actions/download-artifact@v1
+        with:
+          name: metadata
+
+      - name: Read metadata
+        id: read-metadata
+        run: |
+          PR_URL=$(cat metadata.txt | grep PR_URL | cut -d '=' -f2)
+          PR_NUMBER=$(cat metadata.txt | grep PR_NUMBER | cut -d '=' -f2)
+          UPDATE_TYPE=$(cat metadata.txt | grep UPDATE_TYPE | cut -d '=' -f2)
+          echo "::set-output name=PR_URL::$PR_URL"
+          echo "::set-output name=PR_NUMBER::$PR_NUMBER"
+          echo "::set-output name=UPDATE_TYPE::$UPDATE_TYPE"
+      
+      - name: Approve a PR
+        run: gh pr review --approve "${{ steps.read-metadata.outputs.PR_URL }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge for Dependabot PRs
+        if: ${{ steps.read-metadata.outputs.UPDATE_TYPE != 'version-update:semver-major' }}
+        run: gh pr merge --auto --squash "${{ steps.read-metadata.outputs.PR_URL }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
