@@ -23,20 +23,20 @@ jobs:
       - name: Read metadata
         id: read-metadata
         run: |
-          PR_URL=$(cat metadata.txt | grep PR_URL | cut -d '=' -f2)
-          PR_NUMBER=$(cat metadata.txt | grep PR_NUMBER | cut -d '=' -f2)
-          UPDATE_TYPE=$(cat metadata.txt | grep UPDATE_TYPE | cut -d '=' -f2)
-          echo "::set-output name=PR_URL::$PR_URL"
-          echo "::set-output name=PR_NUMBER::$PR_NUMBER"
-          echo "::set-output name=UPDATE_TYPE::$UPDATE_TYPE"
+          PR_URL=$(grep 'PR_URL' metadata.txt | cut -d '=' -f2)
+          PR_NUMBER=$(grep 'PR_NUMBER' metadata.txt | cut -d '=' -f2)
+          UPDATE_TYPE=$(grep 'UPDATE_TYPE' metadata.txt | cut -d '=' -f2)
+          echo "PR_URL=$PR_URL" >> $GITHUB_ENV
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+          echo "UPDATE_TYPE=$UPDATE_TYPE" >> $GITHUB_ENV
       
       - name: Approve a PR
-        run: gh pr review --approve "${{ steps.read-metadata.outputs.PR_URL }}"
+        run: gh pr review --approve "$PR_URL"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Enable auto-merge for Dependabot PRs
-        if: ${{ steps.read-metadata.outputs.UPDATE_TYPE != 'version-update:semver-major' }}
-        run: gh pr merge --auto --squash "${{ steps.read-metadata.outputs.PR_URL }}"
+        if: ${{ env.UPDATE_TYPE != 'version-update:semver-major' }}
+        run: gh pr merge --auto --squash "$PR_URL"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
